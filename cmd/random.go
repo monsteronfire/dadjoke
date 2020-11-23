@@ -63,6 +63,13 @@ type Joke struct {
 	Status int    `json:"status"`
 }
 
+type SearchResult struct {
+	Results    []json.RawMessage `json:"results"`
+	SearchTerm string            `json:"search_term"`
+	Status     int               `json:"status"`
+	TotalJokes int               `json:"total_jokes"`
+}
+
 func getRandomJoke() {
 	url := "https://icanhazdadjoke.com/"
 	responseBytes := getJokeData(url)
@@ -79,8 +86,20 @@ func getRandomJoke() {
 func getSpecificRandomJoke(jokeTerm string) {
 	url := fmt.Sprintf("https://icanhazdadjoke.com/search?term=%s", jokeTerm)
 	responseBytes := getJokeData(url)
-	fmt.Println(jokeTerm)
+	jokes := SearchResult{}
+
+	err := json.Unmarshal(responseBytes, &jokes)
+	if err != nil {
+		log.Println("Could not unmarshal reponseBytes. %v", err)
+	}
+
+	// fmt.Println(jokeTerm)
 	fmt.Println(string(responseBytes))
+
+	// Store the json from jokes.Results into a slice of struct of some kind
+	// Return results and TotalJokes
+	// We need TotalJokes to be able to generate a random number to get a random joke of a specific term
+	// fmt.Println(jokes.Results)
 }
 
 func getJokeData(baseAPI string) []byte {
