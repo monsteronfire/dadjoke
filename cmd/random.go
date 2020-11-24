@@ -1,5 +1,5 @@
 /*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
+Copyright © 2020 Shaii Ong <monsteronfire@gmail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -44,30 +46,22 @@ var randomCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(randomCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// randomCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// randomCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	randomCmd.Flags().String("term", "", "A search term for a dad joke")
 }
 
 // Joke struct
 type Joke struct {
-	Id     string `json:"id"`
+	ID     string `json:"id"`
 	Joke   string `json:"joke"`
 	Status int    `json:"status"`
 }
 
+// SearchResult struct
 type SearchResult struct {
-	Results    []json.RawMessage `json:"results"`
-	SearchTerm string            `json:"search_term"`
-	Status     int               `json:"status"`
-	TotalJokes int               `json:"total_jokes"`
+	Results    json.RawMessage `json:"results"`
+	SearchTerm string          `json:"search_term"`
+	Status     int             `json:"status"`
+	TotalJokes int             `json:"total_jokes"`
 }
 
 func getRandomJoke() {
@@ -84,22 +78,42 @@ func getRandomJoke() {
 }
 
 func getSpecificRandomJoke(jokeTerm string) {
+	total, results := getJokeListWithTerm(jokeTerm)
+	randomiseJokeList(total, results)
+}
+
+func getJokeListWithTerm(jokeTerm string) (totalJokes int, jokeList []Joke) {
 	url := fmt.Sprintf("https://icanhazdadjoke.com/search?term=%s", jokeTerm)
 	responseBytes := getJokeData(url)
-	jokes := SearchResult{}
+	jokeListRaw := SearchResult{}
 
-	err := json.Unmarshal(responseBytes, &jokes)
+	err := json.Unmarshal(responseBytes, &jokeListRaw)
 	if err != nil {
-		log.Println("Could not unmarshal reponseBytes. %v", err)
+		log.Printf("Could not unmarshal reponseBytes. %v", err)
 	}
 
-	// fmt.Println(jokeTerm)
-	fmt.Println(string(responseBytes))
+	jokes := []Joke{}
+	err = json.Unmarshal(jokeListRaw.Results, &jokes)
+	if err != nil {
+		log.Printf("Could not unmarshal reponseBytes. %v", err)
+	}
 
-	// Store the json from jokes.Results into a slice of struct of some kind
-	// Return results and TotalJokes
-	// We need TotalJokes to be able to generate a random number to get a random joke of a specific term
-	// fmt.Println(jokes.Results)
+	return jokeListRaw.TotalJokes, jokes
+}
+
+func randomiseJokeList(len int, jokeList []Joke) {
+	rand.Seed(time.Now().Unix())
+
+	min := 0
+	max := len - 1
+	randomNum := min + rand.Intn(max-min)
+
+	if len > 0 {
+		fmt.Println(jokeList[randomNum].Joke)
+	} else {
+		err := fmt.Errorf("No jokes found with this term")
+		fmt.Println(err.Error())
+	}
 }
 
 func getJokeData(baseAPI string) []byte {
@@ -110,7 +124,7 @@ func getJokeData(baseAPI string) []byte {
 	)
 
 	if err != nil {
-		log.Println("Could not request a dadjoke. %v", err)
+		log.Printf("Could not request a dadjoke. %v", err)
 	}
 
 	request.Header.Add("Accept", "application/json")
@@ -118,16 +132,13 @@ func getJokeData(baseAPI string) []byte {
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		log.Println("Did not get a response. %v", err)
+		log.Printf("Did not get a response. %v", err)
 	}
 
 	responseBytes, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Println("Could not read response body. %v", err)
+		log.Printf("Could not read response body. %v", err)
 	}
 
 	return responseBytes
 }
-
-// TODO
-// Including a search term returns an array of jokes. Write a function to get a random selection from this array
