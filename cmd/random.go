@@ -22,6 +22,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ var randomCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(randomCmd)
 
-	randomCmd.Flags().String("term", "", "A search term for a dad joke")
+	randomCmd.PersistentFlags().String("term", "", "A search term for a dad joke")
 }
 
 // Joke struct
@@ -69,9 +70,8 @@ func getRandomJoke() {
 	responseBytes := getJokeData(url)
 	joke := Joke{}
 
-	err := json.Unmarshal(responseBytes, &joke)
-	if err != nil {
-		log.Println("Could not unmarshal reponseBytes. %v", err)
+	if err := json.Unmarshal(responseBytes, &joke); err != nil {
+		fmt.Printf("Could not unmarshal reponseBytes. %v", err)
 	}
 
 	fmt.Println(string(joke.Joke))
@@ -79,7 +79,18 @@ func getRandomJoke() {
 
 func getSpecificRandomJoke(jokeTerm string) {
 	total, results := getJokeListWithTerm(jokeTerm)
-	randomiseJokeList(total, results)
+
+	matched, err := regexp.MatchString(`\d`, jokeTerm)
+	if err != nil {
+		log.Printf("The regex did not match successfully")
+	}
+
+	if matched {
+		err := fmt.Errorf("Term cannot contain digits")
+		fmt.Println(err.Error())
+	} else {
+		randomiseJokeList(total, results)
+	}
 }
 
 func getJokeListWithTerm(jokeTerm string) (totalJokes int, jokeList []Joke) {
@@ -87,14 +98,12 @@ func getJokeListWithTerm(jokeTerm string) (totalJokes int, jokeList []Joke) {
 	responseBytes := getJokeData(url)
 	jokeListRaw := SearchResult{}
 
-	err := json.Unmarshal(responseBytes, &jokeListRaw)
-	if err != nil {
+	if err := json.Unmarshal(responseBytes, &jokeListRaw); err != nil {
 		log.Printf("Could not unmarshal reponseBytes. %v", err)
 	}
 
 	jokes := []Joke{}
-	err = json.Unmarshal(jokeListRaw.Results, &jokes)
-	if err != nil {
+	if err := json.Unmarshal(jokeListRaw.Results, &jokes); err != nil {
 		log.Printf("Could not unmarshal reponseBytes. %v", err)
 	}
 
@@ -106,9 +115,9 @@ func randomiseJokeList(len int, jokeList []Joke) {
 
 	min := 0
 	max := len - 1
-	randomNum := min + rand.Intn(max-min)
 
 	if len > 0 {
+		randomNum := min + rand.Intn(max-min)
 		fmt.Println(jokeList[randomNum].Joke)
 	} else {
 		err := fmt.Errorf("No jokes found with this term")
