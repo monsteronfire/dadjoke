@@ -22,7 +22,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -79,18 +78,7 @@ func getRandomJoke() {
 
 func getSpecificRandomJoke(jokeTerm string) {
 	total, results := getJokeListWithTerm(jokeTerm)
-
-	matched, err := regexp.MatchString(`\d`, jokeTerm)
-	if err != nil {
-		log.Printf("The regex did not match successfully")
-	}
-
-	if matched {
-		err := fmt.Errorf("Term cannot contain digits")
-		fmt.Println(err.Error())
-	} else {
-		randomiseJokeList(total, results)
-	}
+	randomiseJokeList(total, results)
 }
 
 func getJokeListWithTerm(jokeTerm string) (totalJokes int, jokeList []Joke) {
@@ -116,12 +104,12 @@ func randomiseJokeList(len int, jokeList []Joke) {
 	min := 0
 	max := len - 1
 
-	if len > 0 {
-		randomNum := min + rand.Intn(max-min)
-		fmt.Println(jokeList[randomNum].Joke)
-	} else {
+	if len <= 0 {
 		err := fmt.Errorf("No jokes found with this term")
 		fmt.Println(err.Error())
+	} else {
+		randomNum := min + rand.Intn(max-min)
+		fmt.Println(jokeList[randomNum].Joke)
 	}
 }
 
