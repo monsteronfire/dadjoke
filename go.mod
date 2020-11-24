@@ -1,4 +1,4 @@
-module github.com/monsteronfire/dadjoke-cli
+module github.com/monsteronfire/dadjoke
 
 go 1.15
 

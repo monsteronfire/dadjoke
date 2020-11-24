@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "github.com/monsteronfire/dadjoke-cli/cmd"
+import "github.com/monsteronfire/dadjoke/cmd"
 
 func main() {
 	cmd.Execute()
